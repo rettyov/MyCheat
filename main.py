@@ -1,9 +1,9 @@
 import memoryTools as memTs
 from sys import byteorder
-
+from struct import pack, unpack
 import win32ui
 import win32process
-from ctypes import wintypes, windll, c_char_p, c_ulong, byref,c_ubyte,create_string_buffer,c_size_t
+from ctypes import wintypes, windll, c_char_p, c_ulong, byref,c_ubyte,create_string_buffer,c_size_t, c_byte
 
 
 if __name__ == '__main__':
@@ -29,13 +29,16 @@ if __name__ == '__main__':
     print('HWND is', HWND, '\nPID is', PID, '\nprocessHandle is', processHandle, '\n')
     ### Reading value of a Memory Address ###
 
-    ADDRESS = 0x39C9694C
-    buffer = c_char_p(b"data")
-    buffer_size = len(buffer.value)
-    bytes_read = c_ulong(0)
-    bytes_written = c_ulong(0)
+    address = 0x39C9694C
+    buffer_size = 4
+    buffer = (c_byte * buffer_size)()
+    bytes_read = (c_byte * (buffer_size // 256 + 1))()
 
-    isRead = ReadProcessMemory(processHandle, ADDRESS, buffer, buffer_size, byref(bytes_read))
-    value = int.from_bytes(buffer.value, byteorder=byteorder)
+    isRead = ReadProcessMemory(processHandle, address, byref(buffer), buffer_size, byref(bytes_read))
+    # value = int.from_bytes(buffer.value, byteorder=byteorder)
+    value = b''.join(pack('b', buffer[i]) for i in range(buffer_size))
+
+    value2 = a.read_integer(processHandle, address)
     windll.kernel32.CloseHandle(processHandle)
-    print('Memory Value =', value, buffer.value)
+    print('Memory Value =', bytes_read[::], buffer[::], unpack('b', value[0:1]))
+    print(value2)
