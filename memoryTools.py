@@ -33,7 +33,6 @@ class MemoryTools:
     PROCESS_VM_OPERATION = 0x0008
     PROCESS_VM_READ = 0x0010
     PROCESS_VM_WRITE = 0x0020
-
     # End of Initializing session
 
     def __init__(self):
@@ -42,7 +41,7 @@ class MemoryTools:
     def read_integer(self, proc_h, adr):
         """
         Read Integer from RAM
-        :param proc_h: processHandle
+        :param proc_h: 'processHandle'
         :param adr: address
         :return: int or None
         """
@@ -55,18 +54,21 @@ class MemoryTools:
             return None
         return int.from_bytes(buffer[::], byteorder='little')
 
-    # def write_integer(self, proc_h, adr, value):
-    #     """
-    #     Read Integer from RAM
-    #     :param proc_h: processHandle
-    #     :param adr: address
-    #     :return: int or None
-    #     """
-    #     buffer_size = 4
-    #     buffer = (c_ubyte * buffer_size)()
-    #     bytes_read = c_ubyte()
-    #
-    #     is_read = self.ReadProcessMemory(proc_h, adr, byref(buffer), buffer_size, byref(bytes_read))
-    #     if not is_read:
-    #         return None
-    #     return int.from_bytes(buffer[::], byteorder='little')
+    def write_integer(self, proc_h, adr, value):
+        """
+        Write Integer to RAM
+        :param proc_h: processHandle
+        :param adr: address
+        :param value: value must be integer
+        :return: True or False
+        """
+        if type(value) is not int:
+            return False
+        value_size = 4
+        value = c_ulong(value)
+        bytes_written = c_ubyte()
+
+        is_write = self.WriteProcessMemory(proc_h, adr, byref(value), value_size, byref(bytes_written))
+        if not is_write:
+            return False
+        return True
