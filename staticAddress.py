@@ -7,4 +7,4 @@ class StaticAddressOption(Option):
     def __init__(self, description, type_option, hot_key):
         super().__init__(description, type_option, hot_key)
         mem = MemT()
-        # mem.read_integer()
+        mem.read_integer()
