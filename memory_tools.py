@@ -2,7 +2,7 @@
 # bool CheckSignature(PBYTE source, PBYTE pattern, std::wstring& mask);
 
 from struct import unpack
-from ctypes import windll, c_ulong, byref, c_ubyte, c_long, c_float
+from ctypes import windll, byref, c_ubyte, c_long, c_float
 
 
 class MemoryTools:
@@ -48,6 +48,19 @@ class MemoryTools:
         is_write = self.WriteProcessMemory(process_handle, address, byref(value),
                                            self.__bufferSize, byref(self.__bytes_written))
         return True if is_write else False
+
+    def read_byte(self, process_handle: int, address: int):
+        """
+        Read Byte from RAM\n
+        :param process_handle:
+            A handle to the process with memory that is being read.
+        :param address:
+            A base address in the specified process from which to read.
+        :return: int or None.
+        """
+        self.__bufferSize = 1
+        value = self.__read_bytes(process_handle, address)
+        return None if value is None else int.from_bytes(value, byteorder='little')
 
     def read_integer(self, process_handle: int, address: int):
         """
@@ -156,3 +169,39 @@ class MemoryTools:
         self.__bufferSize = 8
         is_write = self.__write_bytes(process_handle, address, value)
         return True if is_write else False
+
+    @staticmethod
+    def __check_signature(offset_bytes_read: list, init_byte: int, signature: list):
+        for i in range(len(signature)):
+            if offset_bytes_read[i + init_byte] != signature[i] and type(signature[i]) is not str:
+                return False
+        return True
+
+    def scan_signature(self, process_handle: int, initial: int, final: int, signature: str):
+        """
+        Find address with same signature.\n
+        :param process_handle:
+            A handle to the process with memory that is being read. Must be multiply by 0xFFFF.
+        :param initial:
+            A initial address in the specified process to start the read. Must be multiply by 0xFFFF.
+        :param final:
+            A final address in the specified process to end the read. Note the final address decreased by length
+            signature.
+        :param signature: '7F ?? 4B'
+        :return: int or None. Initial signature address.
+        """
+        self.__bufferSize = 0xFFFFF
+        offset = initial
+        signature = [i if i == '??' else int('0x' + i, 16) for i in signature.split()]
+
+        while offset + self.__bufferSize <= final - len(signature):
+            bytes_read = self.__read_bytes(process_handle, offset)
+            # if bytes_read is None:
+            #     print(None)
+            # print(hex(offset))
+            if bytes_read is not None:
+                for init_byte in range(self.__bufferSize - len(signature)):
+                    if self.__check_signature(bytes_read, init_byte, signature):
+                        return offset + init_byte
+            offset += self.__bufferSize - len(signature)
+        return None
